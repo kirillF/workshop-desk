@@ -1,0 +1,56 @@
+{
+  "name": "workshop-desk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=26.5.0 <27",
+    "npm": ">=11.17.0 <12"
+  },
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/contracts"
+  ],
+  "scripts": {
+    "db:setup": "node scripts/db.mjs setup",
+    "db:seed": "node scripts/db.mjs seed",
+    "demo:reset": "node scripts/db.mjs reset",
+    "dev": "node scripts/dev.mjs",
+    "check": "npm run check:contracts && npm run check:api && npm run check:web && npm run check:tests",
+    "check:contracts": "tsc --noEmit -p packages/contracts/tsconfig.json",
+    "check:api": "tsc --noEmit -p apps/api/tsconfig.json",
+    "check:web": "tsc --noEmit -p apps/web/tsconfig.json",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "tsc -p apps/api/tsconfig.build.json",
+    "build:web": "vite build --config apps/web/vite.config.mjs",
+    "start": "node scripts/start.mjs",
+    "test": "npm run test:unit && npm run test:components && npm run test:integration",
+    "test:integration": "node --test tests/integration/*.test.mjs",
+    "test:unit": "vitest run tests/unit tests/client",
+    "test:e2e": "playwright test",
+    "test:components": "vitest run tests/components",
+    "test:coverage": "npm run test:coverage:unit && npm run test:coverage:api",
+    "lint": "eslint apps packages tests scripts *.mjs",
+    "format": "prettier --write apps packages tests scripts *.mjs *.json .prettierrc.json",
+    "format:check": "prettier --check apps packages tests scripts *.mjs *.json .prettierrc.json",
+    "check:tests": "tsc --noEmit -p tests/tsconfig.json",
+    "test:coverage:unit": "vitest run --coverage",
+    "test:coverage:api": "mkdir -p coverage/api && node --experimental-test-coverage --test-coverage-include='apps/api/src/**' --test-coverage-lines=89 --test-coverage-branches=78 --test-coverage-functions=90 --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=coverage/api/lcov.info --test tests/integration/*.test.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "26.5.1",
+    "@vitejs/plugin-react": "6.1.1",
+    "@vitest/coverage-v8": "5.0.1",
+    "eslint": "10.10.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "jsdom": "30.0.1",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.1"
+  }
+}
