@@ -20,6 +20,7 @@ requested requirements, task breakdown and implementation by Luna MAX.
 | AUTH-FR-07 | Preview can show/open a registration form for inspection, but submission, confirmation and cancellation cannot execute. Mutation handlers and API both reject preview writes; hiding buttons alone is insufficient. |
 | AUTH-FR-08 | Leaving preview restores organizer context and fetches current data. Switching preview target/workshop ignores old responses and clears drafts. Reload exits preview while restoring the actual signed-in user. |
 | AUTH-FR-09 | Identity supplied via X-Demo-User-Id or userId query never overrides session identity, including when testMode is enabled. Tests authenticate real sessions; no auth bypass. |
+| AUTH-FR-10 | Leaving participant preview refreshes organizer data and restores transient organizer-list controls to their defaults. The selected organizer workshop remains unchanged. |
 
 ## Nonfunctional requirements / invariants
 

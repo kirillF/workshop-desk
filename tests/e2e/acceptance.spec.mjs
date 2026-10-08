@@ -465,3 +465,28 @@ test('AC15/16: cancellation failure remains visible and dialog returns keyboard 
   await expect(page.getByRole('alert').first()).toBeVisible();
   await expect(trigger).toBeEnabled();
 });
+
+test('organizer filters preserve totals and hidden pending/rejected feedback', async ({
+  page,
+  desk,
+}) => {
+  await open(page);
+  await page.getByLabel('Статус регистрации', { exact: true }).selectOption('waitlisted');
+  await expect(page.getByText('Найдено 1 из 2', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('counter-confirmed')).toHaveText('Подтверждено1');
+  const rule = await control(desk, r2);
+  await row(page, r2).getByRole('button', { name: 'Подтвердить', exact: true }).click();
+  const queued = await desk.queued(rule);
+  await expect(row(page, r2)).toHaveCount(0);
+  await expect(page.getByText(/Борис.*Ожидаем ответ сервера/)).toBeVisible();
+  await page.getByLabel('Поиск по имени').fill('Анна');
+  await desk.release(queued, 'reject');
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Регистрация скрыта фильтрами' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Сбросить фильтры' }).click();
+  await expect(row(page, r2)).toBeVisible();
+  await expect(page.getByTestId('counter-confirmed')).toHaveText('Подтверждено1');
+  await page.getByLabel('Поиск по имени').fill('бОРИС');
+  await expect(page.getByText('Найдено 1 из 2', { exact: true })).toBeVisible();
+});
