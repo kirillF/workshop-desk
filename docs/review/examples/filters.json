@@ -1,0 +1,10 @@
+{
+  "scope": {
+    "base": "main",
+    "head": "demo/pr-filters",
+    "comparison": "merge_base"
+  },
+  "prDescription": "Add local search and status filters to the organizer's registration list. Search covers the name on the registration and the participant's account name. The filters affect visible rows; workshop capacity and status totals still describe the whole workshop. The organizer can reset both filters. Switching workshop starts with an unfiltered list; refreshing the same workshop or returning from the existing participant preview should retain the current filters while loading current registration data. Existing confirmation, cancellation, pending feedback, unknown-outcome handling, and preview permissions remain in scope.",
+  "contextDocuments": ["docs/PROJECT_SPEC.md", "docs/AUTH_SPEC.md", "docs/ORGANIZER_FILTERS.md"],
+  "reportedChecks": []
+}

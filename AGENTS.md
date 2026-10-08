@@ -4,8 +4,8 @@
 
 WD-01–08 and the WD-09–12 authentication/preview amendment are implemented. Read README.md for startup, docs/architecture.md for
 component boundaries, and docs/acceptance.md for actual AC evidence and limits.
-Luna MAX authored the implementation; parent integration applied and verified it.
-No implementation commit exists. Do not infer exhaustive correctness from green tests.
+Read the current Git revision and working tree before changing code. Do not infer
+exhaustive correctness from green tests.
 
 ## Sources and Scope
 
@@ -35,6 +35,13 @@ Report the revision, checks run, actual results, and unresolved limitations for
 material changes. A successful tool run or an absence of findings is not a claim
 of complete correctness. Use existing review-tool context mechanisms when selected;
 check their applicability instead of assuming a file was loaded.
+
+## Review workflow
+
+Use docs/REVIEWING.md for the shared A/B/C runner, source references, evidence
+validation and engineer-approved fix handoffs. docs/review/ is the canonical
+instruction and schema directory. Requirements retain the precedence above.
+Saved review runs are historical evidence, not reviewer input.
 
 ## Implementation Boundaries
 

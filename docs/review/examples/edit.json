@@ -1,0 +1,10 @@
+{
+  "scope": {
+    "base": "main",
+    "head": "demo/pr-edit",
+    "comparison": "merge_base"
+  },
+  "prDescription": "Participants can change the attendee name and comment on an existing active registration without cancelling and booking again. Only its owner can edit it. The registration, status, and seat or waitlist position remain unchanged. Existing field limits and registration command rules continue to apply. The change adds an API action and a form in the participant view.",
+  "contextDocuments": ["docs/PROJECT_SPEC.md", "docs/AUTH_SPEC.md", "docs/EDIT_REGISTRATION.md"],
+  "reportedChecks": []
+}

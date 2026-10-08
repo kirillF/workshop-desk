@@ -1,0 +1,10 @@
+{
+  "scope": {
+    "base": "main",
+    "head": "demo/pr-get",
+    "comparison": "merge_base"
+  },
+  "prDescription": "Avoid duplicate simultaneous workshop catalog and detail reads in one API client. Share an in-flight result for equivalent reads and release it when complete. Preserve existing response validation, read-only preview and error handling. Do not persist response caches or change the API contract. Cancellable or correlated reads remain independent. Writes invalidate sharing.",
+  "contextDocuments": ["docs/PROJECT_SPEC.md", "docs/AUTH_SPEC.md"],
+  "reportedChecks": []
+}

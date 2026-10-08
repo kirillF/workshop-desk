@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Structured review input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scope", "prDescription", "contextDocuments", "reportedChecks"],
+  "properties": {
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "head", "comparison"],
+      "properties": {
+        "base": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "head": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "comparison": {
+          "type": "string",
+          "enum": ["merge_base", "direct"]
+        }
+      }
+    },
+    "prDescription": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "contextDocuments": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      }
+    },
+    "reportedChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "result", "source"],
+        "properties": {
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "result": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        }
+      }
+    }
+  }
+}

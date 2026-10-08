@@ -55,7 +55,7 @@ npm run build
 npm start
 ```
 
-`npm test` runs Vitest unit tests, React Testing Library component/hook tests,
+`npm test` runs review-harness contract tests, Vitest unit tests, React Testing Library component/hook tests,
 and real HTTP/SQLite integration tests. ESLint enforces React hook rules and
 shared/feature import boundaries; Prettier provides consistent formatting.
 `npm run test:coverage` generates separate unit/component and API reports with
@@ -74,6 +74,20 @@ load `.env`. `WORKSHOP_DB_PATH` can point to an isolated absolute path. `API_POR
 and `WEB_PORT` set server ports. Set `WEB_ORIGIN` to the exact frontend origin when
 changing the default address. Set `VITE_API_URL` at build time for a different
 browser API address. The lockfile pins the verified dependencies.
+
+## Review changes
+
+The shared A/B/C runner and fix handoff are documented in [Reviewing](docs/REVIEWING.md).
+A uses the generic review procedure; B adds the PR description; C adds focused investigation, verification and structured
+input/output and validated evidence. Each run uses a fresh isolated snapshot.
+Use `npm run review:preflight` before a CLI review; it makes no model request.
+
+## Demo PRs
+
+Three separate feature branches contain the demo changes: `demo/pr-filters`,
+`demo/pr-edit` and `demo/pr-get`. Each adds one change to the same project and
+review configuration. See [Demo PRs](docs/DEMO_PRS.md) for their descriptions,
+diffs and review commands. Presentation files and saved review runs stay local.
 
 ## Navigation
 
