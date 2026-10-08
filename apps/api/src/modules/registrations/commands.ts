@@ -97,6 +97,13 @@ export function updateRegistration(
       throw forbidden();
     }
 
+    if (
+      request.action === RegistrationAction.Edit &&
+      (actor.role !== UserRole.Participant || actor.id !== participantId)
+    ) {
+      throw forbidden();
+    }
+
     const currentVersion = Number(target.version);
     if (currentVersion !== request.expectedVersion) {
       throw versionConflict();
@@ -133,20 +140,26 @@ export function updateRegistration(
       ) {
         throw invalidTransition();
       }
-      nextStatus = RegistrationStatus.Cancelled;
+      nextStatus =
+        request.action === RegistrationAction.Edit ? currentStatus : RegistrationStatus.Cancelled;
     }
 
     const updateResult = database
       .prepare(
         `
         UPDATE registrations
-        SET status = ?, version = version + 1, updated_at = ?
+        SET status = ?, version = version + 1, updated_at = ?,
+            attendee_name = ?, comment = ?
         WHERE id = ? AND version = ? AND status = ?
       `,
       )
       .run(
         nextStatus,
         new Date().toISOString(),
+        request.action === RegistrationAction.Edit
+          ? request.attendeeName
+          : String(target.attendee_name),
+        request.action === RegistrationAction.Edit ? request.comment : String(target.comment),
         registrationId,
         request.expectedVersion,
         currentStatus,

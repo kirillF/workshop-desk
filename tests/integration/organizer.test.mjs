@@ -429,3 +429,47 @@ test('validation, stale versions, full capacity, and invalid transitions do not 
   assert.equal(state.body.workshop.confirmedCount, 2);
   assert.equal(state.body.workshop.availableSeats, 0);
 });
+
+for (const [id, actor, workshopId, status] of [
+  ['registration-full-confirmed-1', 'participant-3', 'workshop-full', 'confirmed'],
+  ['registration-spare-waitlisted', 'participant-2', 'workshop-spare', 'waitlisted'],
+]) {
+  test(`editing ${status} preserves allocation, identity and rejects stale writes`, async (t) => {
+    const databasePath = await temporaryDatabase(t);
+    seedDatabase(databasePath);
+    const port = await startApi(t, databasePath);
+    const before = await request(port, `/workshops/${workshopId}`);
+    const edit = (expectedVersion, attendeeName = 'Новое имя', user = actor) =>
+      request(port, `/registrations/${id}`, {
+        method: 'PATCH',
+        actor: user,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'edit',
+          expectedVersion,
+          attendeeName,
+          comment: 'Новый комментарий',
+        }),
+      });
+    for (const user of ['organizer-1', 'participant-4']) {
+      assert.equal((await edit(1, 'Чужое имя', user)).status, 403);
+    }
+    assert.equal((await edit(1, '')).status, 400);
+    const changed = await edit(1);
+    assert.equal(changed.status, 200);
+    assert.equal(changed.body.registration.id, id);
+    assert.equal(changed.body.registration.participantId, actor);
+    assert.equal(changed.body.registration.status, status);
+    assert.equal(changed.body.registration.version, 2);
+    assert.equal(changed.body.registration.attendeeName, 'Новое имя');
+    assert.equal(changed.body.registration.comment, 'Новый комментарий');
+    const after = await request(port, `/workshops/${workshopId}`);
+    assert.deepEqual(after.body.workshop, before.body.workshop);
+    assert.equal((await edit(1, 'Устаревшее имя')).status, 409);
+    assert.equal(
+      (await request(port, `/registrations/${id}`, patchOptions(actor, 'cancel', 2))).status,
+      200,
+    );
+    assert.equal((await edit(3)).status, 409);
+  });
+}

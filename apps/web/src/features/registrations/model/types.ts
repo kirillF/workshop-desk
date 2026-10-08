@@ -59,6 +59,8 @@ export type RegistrationController = {
   formSubmitting: boolean;
   capacityConflict: boolean;
   formMode: RegistrationMode;
+  editing: boolean;
+  openEditForm: () => void;
   cancelTarget: CancelTarget | null;
   pageNotice?: string;
   refreshAll: () => void;
@@ -66,7 +68,10 @@ export type RegistrationController = {
   openParticipantForm: () => void;
   updateDraft: (field: keyof Draft, value: string) => void;
   startParticipantRegistration: (mode: RegistrationMode) => void;
-  startOrganizerMutation: (registration: Registration, action: RegistrationAction) => void;
+  startOrganizerMutation: (
+    registration: Registration,
+    action: typeof RegistrationAction.Confirm | typeof RegistrationAction.Cancel,
+  ) => void;
   requestCancellation: (registration: Registration, trigger: HTMLElement) => void;
   dismissCancellation: () => void;
   handleCancelConfirmed: (target: CancelTarget) => void;

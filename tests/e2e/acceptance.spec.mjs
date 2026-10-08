@@ -465,3 +465,58 @@ test('AC15/16: cancellation failure remains visible and dialog returns keyboard 
   await expect(page.getByRole('alert').first()).toBeVisible();
   await expect(trigger).toBeEnabled();
 });
+
+for (const [actor, workshop, id, status] of [
+  ['participant-3', 'workshop-full', 'registration-full-confirmed-1', 'confirmed'],
+  ['participant-2', 'workshop-spare', 'registration-spare-waitlisted', 'waitlisted'],
+]) {
+  test(`edit ${status}: save and reload preserve status and capacity`, async ({ page, desk }) => {
+    await open(page, actor, workshop);
+    const before = await read(desk, workshop);
+    await page.getByRole('button', { name: 'Изменить данные', exact: true }).click();
+    await page.getByLabel('Имя участника', { exact: true }).fill('Новое имя');
+    await page.getByLabel('Комментарий', { exact: true }).fill('Уточнение к заявке');
+    await page.getByRole('button', { name: 'Сохранить изменения' }).click();
+    await expect(page.getByRole('button', { name: 'Изменить данные', exact: true })).toBeVisible();
+    await synced(page);
+    const after = await read(desk, workshop);
+    expect(after.workshop).toEqual(before.workshop);
+    expect(after.registrations.find((r) => r.id === id)).toMatchObject({
+      attendeeName: 'Новое имя',
+      comment: 'Уточнение к заявке',
+      status,
+      version: 2,
+    });
+    await page.reload();
+    await page.getByRole('button', { name: 'Текущий воркшоп' }).click();
+    await synced(page);
+    await page.getByRole('button', { name: 'Изменить данные', exact: true }).click();
+    await expect(page.getByLabel('Имя участника', { exact: true })).toHaveValue('Новое имя');
+    await expect(page.getByLabel('Комментарий', { exact: true })).toHaveValue('Уточнение к заявке');
+  });
+}
+
+test('edit keeps the opening version after an external cancellation and retains the draft', async ({
+  page,
+  desk,
+}) => {
+  await open(page, 'participant-1');
+  await page.getByRole('button', { name: 'Изменить данные', exact: true }).click();
+  await page.getByLabel('Комментарий', { exact: true }).fill('Несохранённое уточнение');
+  expect((await patch(desk, r1, 'cancel')).status).toBe(200);
+  await page.getByRole('button', { name: 'Сохранить изменения' }).click();
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: /измен|устар/i })
+      .first(),
+  ).toBeVisible();
+  await expect(page.getByLabel('Комментарий', { exact: true })).toHaveValue(
+    'Несохранённое уточнение',
+  );
+  const after = await read(desk);
+  expect(after.registrations.find((r) => r.id === r1)).toMatchObject({
+    status: 'cancelled',
+    version: 2,
+  });
+});

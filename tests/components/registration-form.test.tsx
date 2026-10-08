@@ -74,3 +74,11 @@ it('does not silently turn a waitlist submission into booking when seats reopen'
   fireEvent.click(screen.getByRole('button', { name: 'Встать в лист ожидания' }));
   expect(p.onSubmit).toHaveBeenCalledExactlyOnceWith('waitlist');
 });
+
+it('editing at full capacity only offers saving the existing registration', () => {
+  const p = props();
+  render(<ParticipantForm {...p} editing availableSeats={0} />);
+  expect(screen.queryByRole('button', { name: 'Встать в лист ожидания' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить изменения' }));
+  expect(p.onSubmit).toHaveBeenCalledOnce();
+});

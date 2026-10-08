@@ -9,6 +9,7 @@ import type {
   OrganizerRegistrationsResponse,
   Registration,
   UpdateRegistrationResponse,
+  UpdateRegistrationRequest,
   User,
   WorkshopResponse,
   WorkshopsResponse,
@@ -63,7 +64,7 @@ export interface RegistrationApi {
   ): Promise<OrganizerRegistrationsResponse>;
   patchRegistration(
     registrationId: string,
-    input: { action: RegistrationAction; expectedVersion: number },
+    input: UpdateRegistrationRequest,
     options?: ApiRequestOptions,
   ): Promise<UpdateRegistrationResponse>;
   postRegistration(
@@ -137,6 +138,7 @@ export function useRegistrationController(
     status: 'idle',
     workshops: [],
   });
+  const [editTarget, setEditTarget] = useState<Registration | null>(null);
   const [draft, setDraft] = useState<Draft>({ name: '', comment: '' });
   const [draftErrors, setDraftErrors] = useState<DraftErrors>({});
   const [formOpen, setFormOpen] = useState(false);
@@ -174,6 +176,7 @@ export function useRegistrationController(
   }, [store]);
 
   const resetParticipantForm = useCallback(() => {
+    setEditTarget(null);
     formInteractionRef.current += 1;
     setDraft({ name: '', comment: '' });
     setDraftErrors({});
@@ -419,7 +422,10 @@ export function useRegistrationController(
       : null;
 
   const startOrganizerMutation = useCallback(
-    (registration: Registration, action: RegistrationAction) => {
+    (
+      registration: Registration,
+      action: typeof RegistrationAction.Confirm | typeof RegistrationAction.Cancel,
+    ) => {
       const origin = store.getContext();
       if (identity.role !== UserRole.Organizer || origin.workshopId !== selectedWorkshopId) {
         return;
@@ -518,13 +524,18 @@ export function useRegistrationController(
       const started = store.startOperation({
         participantId: identity.id,
         registrationId: existingRegistration?.id,
-        action: mode === RegistrationMode.Waitlist ? 'waitlist' : 'register',
-        expectedVersion: existingRegistration?.version ?? null,
+        action: editTarget
+          ? RegistrationAction.Edit
+          : mode === RegistrationMode.Waitlist
+            ? 'waitlist'
+            : 'register',
+        expectedVersion: editTarget?.version ?? existingRegistration?.version ?? null,
         optimisticPatch: {
           attendeeName: name,
           comment: draft.comment,
-          status:
-            mode === RegistrationMode.Seat
+          status: editTarget
+            ? editTarget.status
+            : mode === RegistrationMode.Seat
               ? RegistrationStatus.Confirmed
               : RegistrationStatus.Waitlisted,
           version: existingRegistration?.version ?? 0,
@@ -542,16 +553,27 @@ export function useRegistrationController(
       setDraftErrors({});
       setFormSubmitting(true);
       try {
-        const promise = api.postRegistration(
-          origin.workshopId,
-          {
-            attendeeName: name,
-            comment: draft.comment,
-            mode,
-            expectedVersion: started.request.expectedVersion,
-          },
-          { operationId: started.operation.opId },
-        );
+        const promise = editTarget
+          ? api.patchRegistration(
+              editTarget.id,
+              {
+                action: RegistrationAction.Edit,
+                attendeeName: name,
+                comment: draft.comment,
+                expectedVersion: editTarget.version,
+              },
+              { operationId: started.operation.opId },
+            )
+          : api.postRegistration(
+              origin.workshopId,
+              {
+                attendeeName: name,
+                comment: draft.comment,
+                mode,
+                expectedVersion: started.request.expectedVersion,
+              },
+              { operationId: started.operation.opId },
+            );
         runMutation(started.operation, origin, promise, {
           formToken,
           onDefinitiveError: (error) => {
@@ -580,7 +602,17 @@ export function useRegistrationController(
         setFormSubmitting(false);
       }
     },
-    [api, draft, identity.id, identity.role, refreshAll, runMutation, selectedWorkshopId, store],
+    [
+      api,
+      draft,
+      editTarget,
+      identity.id,
+      identity.role,
+      refreshAll,
+      runMutation,
+      selectedWorkshopId,
+      store,
+    ],
   );
 
   const startParticipantCancellation = useCallback(
@@ -696,6 +728,27 @@ export function useRegistrationController(
     );
     setFormOpen(true);
   }, [identity.id, identity.role, selectedWorkshop, store]);
+
+  const openEditForm = useCallback(() => {
+    if (
+      identity.role !== UserRole.Participant ||
+      !store.getState().read.ready ||
+      participantBusyOperation ||
+      !participantRegistration ||
+      participantRegistration.status === RegistrationStatus.Cancelled
+    )
+      return;
+    formInteractionRef.current += 1;
+    setEditTarget(participantRegistration);
+    setDraft({
+      name: participantRegistration.attendeeName,
+      comment: participantRegistration.comment,
+    });
+    setDraftErrors({});
+    setCapacityConflict(false);
+    setFormSubmitting(false);
+    setFormOpen(true);
+  }, [identity.role, store, participantBusyOperation, participantRegistration]);
 
   const updateDraft = useCallback((field: keyof Draft, value: string) => {
     formInteractionRef.current += 1;
@@ -822,6 +875,8 @@ export function useRegistrationController(
     formSubmitting,
     capacityConflict,
     formMode,
+    editing: editTarget !== null,
+    openEditForm,
     cancelTarget,
     pageNotice,
     refreshAll,

@@ -19,6 +19,10 @@ change currently under implementation. It replaces the v0.3 demo identity select
 with local session login and organizer-only read-only preview. The v0.3 acceptance
 status above describes the baseline, not completion of this amendment.
 
+## Participant editing amendment
+
+[Edit participant registration](EDIT_REGISTRATION.md) extends the supported actions on active registrations.
+
 ## 1. Purpose
 
 Workshop Desk is a locally runnable technical workshop booking service.
