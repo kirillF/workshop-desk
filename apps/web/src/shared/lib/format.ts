@@ -51,6 +51,8 @@ export function registrationStatusClass(status: string): string {
 
 export function operationActionLabel(action: string): string {
   switch (action) {
+    case RegistrationAction.Edit:
+      return 'Изменение данных';
     case RegistrationAction.Confirm:
       return 'Подтверждение';
     case RegistrationAction.Cancel:

@@ -1,4 +1,6 @@
 import {
+  RegistrationAction,
+  RegistrationMode,
   isPositiveInteger,
   isRecord,
   isRegistrationAction,
@@ -6,8 +8,6 @@ import {
 } from '../../../../../packages/contracts/src/index.ts';
 import type {
   CreateRegistrationRequest,
-  RegistrationAction,
-  RegistrationMode,
   UpdateRegistrationRequest,
 } from '../../../../../packages/contracts/src/index.ts';
 import { ApiProblem } from '../../shared/http/errors.ts';
@@ -69,7 +69,7 @@ export function parseUpdateRegistrationRequest(value: unknown): UpdateRegistrati
   const expectedVersion = value.expectedVersion;
 
   if (!isRegistrationAction(action)) {
-    fieldErrors.action = 'Действие должно быть confirm или cancel.';
+    fieldErrors.action = 'Действие должно быть confirm, cancel или edit.';
   }
   if (!isPositiveInteger(expectedVersion)) {
     fieldErrors.expectedVersion = 'Версия должна быть положительным целым числом.';
@@ -79,8 +79,17 @@ export function parseUpdateRegistrationRequest(value: unknown): UpdateRegistrati
     throw new ApiProblem('VALIDATION_ERROR', 'Проверьте параметры запроса.', fieldErrors);
   }
 
+  if (action === RegistrationAction.Edit) {
+    const fields = parseCreateRegistrationRequest({ ...value, mode: RegistrationMode.Seat });
+    return {
+      action,
+      attendeeName: fields.attendeeName,
+      comment: fields.comment,
+      expectedVersion: expectedVersion as number,
+    };
+  }
   return {
-    action: action as RegistrationAction,
+    action: action as typeof RegistrationAction.Confirm | typeof RegistrationAction.Cancel,
     expectedVersion: expectedVersion as number,
   };
 }

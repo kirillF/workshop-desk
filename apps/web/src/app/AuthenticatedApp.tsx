@@ -245,6 +245,8 @@ export function AuthenticatedApp({
               errors={controller.draftErrors}
               capacityConflict={controller.capacityConflict}
               formMode={controller.formMode}
+              editing={controller.editing}
+              onEdit={controller.openEditForm}
               onBack={() => setView('catalog')}
               onOpenForm={controller.openParticipantForm}
               onCloseForm={controller.resetParticipantForm}

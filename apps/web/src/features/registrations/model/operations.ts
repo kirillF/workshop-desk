@@ -579,7 +579,9 @@ export class OperationStore {
       input.expectedVersion === undefined ? (row?.version ?? null) : input.expectedVersion;
 
     if (
-      (input.action === RegistrationAction.Confirm || input.action === RegistrationAction.Cancel) &&
+      (input.action === RegistrationAction.Confirm ||
+        input.action === RegistrationAction.Cancel ||
+        input.action === RegistrationAction.Edit) &&
       (typeof expectedVersion !== 'number' ||
         !Number.isSafeInteger(expectedVersion) ||
         expectedVersion <= 0)

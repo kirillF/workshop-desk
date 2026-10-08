@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import type { Draft, DraftErrors } from '../model/types.ts';
 
 export function ParticipantForm({
+  editing = false,
   draft,
   errors,
   formSubmitting,
@@ -16,6 +17,7 @@ export function ParticipantForm({
   onClose,
   onSubmit,
 }: {
+  editing?: boolean;
   draft: Draft;
   errors: DraftErrors;
   formSubmitting: boolean;
@@ -29,15 +31,17 @@ export function ParticipantForm({
   onSubmit: (mode: RegistrationMode) => void;
 }) {
   const showWaitlist =
-    formMode === RegistrationMode.Seat && (capacityConflict || availableSeats === 0);
+    !editing && formMode === RegistrationMode.Seat && (capacityConflict || availableSeats === 0);
   const disabled = formSubmitting || busy || !formReady;
 
   return (
     <section className="panel stack" aria-labelledby="registration-form-title">
       <div className="panel-header">
         <div>
-          <div className="eyebrow">Новая заявка</div>
-          <h2 id="registration-form-title">Запись на воркшоп</h2>
+          <div className="eyebrow">{editing ? 'Редактирование заявки' : 'Новая заявка'}</div>
+          <h2 id="registration-form-title">
+            {editing ? 'Данные регистрации' : 'Запись на воркшоп'}
+          </h2>
         </div>
       </div>
 
@@ -110,9 +114,11 @@ export function ParticipantForm({
           <button type="submit" className="button button-primary" disabled={disabled}>
             {formSubmitting
               ? 'Отправляем…'
-              : formMode === RegistrationMode.Waitlist
-                ? 'Встать в лист ожидания'
-                : 'Забронировать место'}
+              : editing
+                ? 'Сохранить изменения'
+                : formMode === RegistrationMode.Waitlist
+                  ? 'Встать в лист ожидания'
+                  : 'Забронировать место'}
           </button>
 
           {showWaitlist && (

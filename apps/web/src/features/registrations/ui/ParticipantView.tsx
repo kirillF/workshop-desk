@@ -37,6 +37,8 @@ export function ParticipantView({
   errors,
   capacityConflict,
   formMode,
+  editing,
+  onEdit,
   onBack,
   onOpenForm,
   onCloseForm,
@@ -60,6 +62,8 @@ export function ParticipantView({
   errors: DraftErrors;
   capacityConflict: boolean;
   formMode: RegistrationMode;
+  editing: boolean;
+  onEdit: () => void;
   onBack: () => void;
   onOpenForm: () => void;
   onCloseForm: () => void;
@@ -144,6 +148,14 @@ export function ParticipantView({
             <div className="actions">
               <button
                 type="button"
+                className="button"
+                disabled={!state.read.ready}
+                onClick={onEdit}
+              >
+                Изменить данные
+              </button>
+              <button
+                type="button"
                 className="button button-danger"
                 onClick={(event) => onCancel(registration, event.currentTarget)}
               >
@@ -186,6 +198,7 @@ export function ParticipantView({
 
       {formOpen && (
         <ParticipantForm
+          editing={editing}
           draft={draft}
           errors={errors}
           formSubmitting={formSubmitting}

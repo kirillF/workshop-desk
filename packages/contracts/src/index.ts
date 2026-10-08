@@ -16,6 +16,7 @@ export type RegistrationStatus = (typeof RegistrationStatus)[keyof typeof Regist
 export const RegistrationAction = {
   Confirm: 'confirm',
   Cancel: 'cancel',
+  Edit: 'edit',
 } as const;
 
 export type RegistrationAction = (typeof RegistrationAction)[keyof typeof RegistrationAction];
@@ -80,10 +81,10 @@ export interface OrganizerRegistrationsResponse {
   registrations: Registration[];
 }
 
-export interface UpdateRegistrationRequest {
-  action: RegistrationAction;
-  expectedVersion: number;
-}
+export type UpdateRegistrationRequest = { expectedVersion: number } & (
+  | { action: typeof RegistrationAction.Edit; attendeeName: string; comment: string }
+  | { action: typeof RegistrationAction.Confirm | typeof RegistrationAction.Cancel }
+);
 
 export interface UpdateRegistrationResponse {
   registration: Registration;
@@ -148,7 +149,11 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function isRegistrationAction(value: unknown): value is RegistrationAction {
-  return value === RegistrationAction.Confirm || value === RegistrationAction.Cancel;
+  return (
+    value === RegistrationAction.Confirm ||
+    value === RegistrationAction.Cancel ||
+    value === RegistrationAction.Edit
+  );
 }
 
 export function isRegistrationMode(value: unknown): value is RegistrationMode {
@@ -163,7 +168,9 @@ export function isUpdateRegistrationRequest(value: unknown): value is UpdateRegi
   return (
     isRecord(value) &&
     isRegistrationAction(value.action) &&
-    isPositiveInteger(value.expectedVersion)
+    isPositiveInteger(value.expectedVersion) &&
+    (value.action !== RegistrationAction.Edit ||
+      (typeof value.attendeeName === 'string' && typeof value.comment === 'string'))
   );
 }
 
