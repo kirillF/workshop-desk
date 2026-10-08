@@ -201,3 +201,80 @@ describe('untrusted DTO validation', () => {
       isWorkshopSnapshot({ ...workshop, confirmedCount: 0, waitlistedCount: 2, availableSeats: 0 }),
     ).toBe(true));
 });
+
+describe('in-flight workshop reads', () => {
+  const payload = { workshops: [{ ...workshop, myRegistration: null }] };
+  const response = () => new Response(JSON.stringify(payload), { status: 200 });
+  function held() {
+    let release!: (response: Response) => void;
+    const promise = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    return { promise, release };
+  }
+  it('shares overlapping reads and releases the result after completion', async () => {
+    const first = held();
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(first.promise)
+      .mockImplementation(async () => response());
+    const api = createApiClient({ fetchImpl });
+    const a = api.getWorkshops();
+    const b = api.getWorkshops();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    first.release(response());
+    await expect(Promise.all([a, b])).resolves.toEqual([payload, payload]);
+    await api.getWorkshops();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+  it('releases failed reads so a later call can retry', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockImplementation(async () => response());
+    const api = createApiClient({ fetchImpl });
+    const results = await Promise.allSettled([api.getWorkshops(), api.getWorkshops()]);
+    expect(results.every((r) => r.status === 'rejected')).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await expect(api.getWorkshops()).resolves.toEqual(payload);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+  it('keeps cancellable and correlated requests independent', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async () => response());
+    const api = createApiClient({ fetchImpl });
+    await Promise.all([
+      api.getWorkshops({ signal: new AbortController().signal }),
+      api.getWorkshops({ signal: new AbortController().signal }),
+      api.getWorkshops({ operationId: 'one' }),
+      api.getWorkshops({ operationId: 'two' }),
+    ]);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+  it('separates resource URLs and invalidates sharing when a mutation starts', async () => {
+    const first = held();
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(first.promise)
+      .mockImplementation(
+        async (url) =>
+          new Response(
+            JSON.stringify(
+              String(url).endsWith('/auth/logout')
+                ? { ok: true }
+                : String(url).endsWith('/workshops/w1')
+                  ? { workshop, myRegistration: null }
+                  : payload,
+            ),
+            { status: 200 },
+          ),
+      );
+    const api = createApiClient({ fetchImpl });
+    const pending = api.getWorkshops();
+    await api.getWorkshop('w1');
+    await api.logout();
+    await api.getWorkshops();
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    first.release(response());
+    await pending;
+  });
+});

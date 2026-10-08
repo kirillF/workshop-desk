@@ -79,6 +79,8 @@ export class WorkshopApi {
 
   private readonly fetchImpl: typeof fetch;
 
+  private readonly pendingReads = new Map<string, Promise<unknown>>();
+
   constructor(options: ApiClientOptions = {}) {
     this.baseUrl = normalizeBaseUrl(options.baseUrl || DEFAULT_API_URL);
     this.fetchImpl = options.fetchImpl || globalThis.fetch.bind(globalThis);
@@ -97,7 +99,39 @@ export class WorkshopApi {
     };
   }
 
-  private async request<T>(
+  private request<T>(
+    method: 'GET' | 'POST' | 'PATCH',
+    path: string,
+    validate: (value: unknown) => value is T,
+    options: ApiRequestOptions = {},
+    body?: unknown,
+  ): Promise<T> {
+    if (method !== 'GET') {
+      this.pendingReads.clear();
+    }
+    const shareRead =
+      method === 'GET' &&
+      (path === '/workshops' || /^\/workshops\/[^/]+$/.test(path)) &&
+      !options.signal &&
+      !options.operationId;
+    if (!shareRead) {
+      return this.performRequest(method, path, validate, options, body);
+    }
+    const key = method + ' ' + this.requestUrl(path);
+    const pending = this.pendingReads.get(key);
+    if (pending) {
+      return pending as Promise<T>;
+    }
+    const next = this.performRequest(method, path, validate, options, body).finally(() => {
+      if (this.pendingReads.get(key) === next) {
+        this.pendingReads.delete(key);
+      }
+    });
+    this.pendingReads.set(key, next);
+    return next;
+  }
+
+  private async performRequest<T>(
     method: 'GET' | 'POST' | 'PATCH',
     path: string,
     validate: (value: unknown) => value is T,
