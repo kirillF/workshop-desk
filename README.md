@@ -1,6 +1,6 @@
-# Практика / Workshop Desk
+# Workshop Desk
 
-Public UI name: **Практика**. Technical project: Workshop Desk. See
+Public UI name: **Workshop Desk**. Technical project: Workshop Desk. See
 [interface direction](docs/DESIGN.md) for the latest redesign and verification scope.
 
 A locally runnable workshop booking application: catalog, participant forms,
