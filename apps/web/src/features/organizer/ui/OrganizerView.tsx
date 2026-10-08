@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { RegistrationStatus } from '@workshop-desk/contracts';
 import type { CatalogWorkshop, User } from '@workshop-desk/contracts';
 import type { WorkshopSnapshot } from '@workshop-desk/contracts';
@@ -38,6 +39,11 @@ export function OrganizerView({
   canContinue: (operation: OperationDescriptor) => boolean;
   participantName: (id: string) => string;
 }) {
+  const [filters, setFilters] = useState({ workshopId: selectedWorkshopId, query: '', status: '' });
+  const currentFilters =
+    filters.workshopId === selectedWorkshopId ? filters : { query: '', status: '' };
+  const updateFilters = (patch: Partial<{ query: string; status: string }>) =>
+    setFilters({ ...currentFilters, ...patch, workshopId: selectedWorkshopId });
   const currentContextKey = contextId({
     actorId: identity.id,
     workshopId: selectedWorkshopId,
@@ -77,6 +83,20 @@ export function OrganizerView({
               operation.key.participantId === registration.participantId)),
       ) ?? null;
 
+  const query = currentFilters.query.trim().toLocaleLowerCase('ru');
+  const visibleRegistrations = orderedRegistrations.filter(
+    (registration) =>
+      (!currentFilters.status || registration.status === currentFilters.status) &&
+      (!query ||
+        [registration.attendeeName, participantName(registration.participantId)].some((name) =>
+          name.toLocaleLowerCase('ru').includes(query),
+        )),
+  );
+  const hiddenOperations = registrations
+    .filter((registration) => !visibleRegistrations.includes(registration))
+    .map((registration) => ({ registration, operation: rowOperation(registration) }))
+    .filter(({ operation }) => operation && operation.status !== 'unknown');
+
   return (
     <section className="stack" aria-labelledby="organizer-title">
       <section className="panel stack">
@@ -94,7 +114,10 @@ export function OrganizerView({
             id="organizer-workshop-select"
             className="control"
             value={selectedWorkshopId}
-            onChange={(event) => onWorkshopChange(event.target.value)}
+            onChange={(event) => {
+              setFilters({ workshopId: event.target.value, query: '', status: '' });
+              onWorkshopChange(event.target.value);
+            }}
             disabled={workshops.length === 0 && !workshop}
           >
             {!workshops.length && workshop && <option value={workshop.id}>{workshop.title}</option>}
@@ -107,6 +130,46 @@ export function OrganizerView({
         </div>
 
         {workshop && <WorkshopMetrics workshop={workshop} />}
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="registration-search">Поиск по имени</label>
+            <input
+              id="registration-search"
+              className="control"
+              type="search"
+              value={currentFilters.query}
+              onChange={(event) => updateFilters({ query: event.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="registration-status">Статус регистрации</label>
+            <select
+              id="registration-status"
+              className="control"
+              value={currentFilters.status}
+              onChange={(event) => updateFilters({ status: event.target.value })}
+            >
+              <option value="">Все статусы</option>
+              <option value={RegistrationStatus.Confirmed}>Подтверждена</option>
+              <option value={RegistrationStatus.Waitlisted}>Лист ожидания</option>
+              <option value={RegistrationStatus.Cancelled}>Отменена</option>
+            </select>
+          </div>
+        </div>
+        {state.snapshot && (
+          <div role="status">
+            Найдено {visibleRegistrations.length} из {registrations.length}
+          </div>
+        )}
+        {(currentFilters.query || currentFilters.status) && (
+          <button
+            type="button"
+            className="button button-quiet"
+            onClick={() => updateFilters({ query: '', status: '' })}
+          >
+            Сбросить фильтры
+          </button>
+        )}
       </section>
 
       {!state.snapshot && state.read.status === 'pending' && (
@@ -131,7 +194,26 @@ export function OrganizerView({
         <div className="empty-state">В выбранном воркшопе пока нет регистраций.</div>
       )}
 
-      {state.snapshot && orderedRegistrations.length > 0 && (
+      {state.snapshot && registrations.length > 0 && visibleRegistrations.length === 0 && (
+        <div className="empty-state">По выбранным фильтрам регистраций нет.</div>
+      )}
+
+      {hiddenOperations.map(({ registration, operation }) => {
+        const error = state.errors.find((item) => item.opId === operation?.opId);
+        return (
+          <div
+            key={registration.id}
+            className={error ? 'notice notice-error' : 'notice'}
+            role={error ? 'alert' : 'status'}
+          >
+            <strong>{registration.attendeeName}</strong>:{' '}
+            {error?.error.message ?? 'Ожидаем ответ сервера…'}
+            <span className="muted"> Регистрация скрыта фильтрами.</span>
+          </div>
+        );
+      })}
+
+      {state.snapshot && visibleRegistrations.length > 0 && (
         <div className="data-table-wrap">
           <table className="data-table">
             <caption className="sr-only">Регистрации выбранного воркшопа</caption>
@@ -144,7 +226,7 @@ export function OrganizerView({
               </tr>
             </thead>
             <tbody>
-              {orderedRegistrations.map((registration) => {
+              {visibleRegistrations.map((registration) => {
                 const operation = rowOperation(registration);
                 const busy = operation?.status === 'pending' || operation?.status === 'unknown';
                 const rowError = operation

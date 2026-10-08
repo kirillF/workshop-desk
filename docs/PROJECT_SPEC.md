@@ -615,3 +615,7 @@ sources and evidence appropriate to the change.
 0.1 established the functional booking service. 0.2 strengthened source authority,
 intermediate rollback checks, and review evidence but combined product and teaching
 requirements. This revision supersedes that combined document.
+
+## Organizer filtering amendment
+
+See [ORGANIZER_FILTERS.md](ORGANIZER_FILTERS.md) for search and status filtering requirements.
